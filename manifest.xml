@@ -1,0 +1,16 @@
+<package>
+  <description brief="object_pose_estimation">
+
+     object_pose_estimation
+
+  </description>
+  <author>Stephan Wirth</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/object_pose_estimation</url>
+  <depend package="rospy"/>
+  <depend package="rgbdslam"/>
+
+</package>
+
+
