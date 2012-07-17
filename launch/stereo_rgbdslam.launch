@@ -1,0 +1,30 @@
+<launch>
+  <arg name="stereo" default="/stereo_down"/>
+  <arg name="image_frame_id" default="/stereo_down_optical"/>
+
+  <node pkg="viso2_ros" type="stereo_odometer" name="viso2">
+    <remap from="stereo" to="$(arg stereo)"/>
+    <remap from="image" to="image_rect_color"/>
+    <param name="base_link_frame_id" value="$(arg image_frame_id)"/>
+    <param name="refinement" value="2"/>
+  </node>
+
+  <node pkg="rgbdslam" type="rgbdslam" name="rgbdslam" cwd="node" required="false" output="screen" >
+    <!-- see rgbslam_sample_config.launch for all available parameters and their default values -->
+    <param name="config/topic_image_mono"              value=""/> <!--could also be color -->
+    <param name="config/topic_image_depth"             value=""/>
+  	<param name="config/topic_points"                  value=""/>
+
+  	<param name="config/wide_topic"                    value="$(arg stereo)/left/image_rect_color" />
+  	<param name="config/wide_cloud_topic"              value="$(arg stereo)/points2" />
+  	<param name="config/use_icp"                       value="false" />
+    <param name="config/base_frame_name"               value="$(arg image_frame_id)"/> <!-- /openni_camera for hand-held kinect. For robot, e.g., /base_link -->
+    <param name="config/store_pointclouds"             value="true" />
+    <param name="config/feature_detector_type"         value="SURF"/>
+    <param name="config/descriptor_extractor_type"     value="SURF"/>
+
+    <param name="config/start_paused"                  value="false"/>
+ </node>
+  <!--node pkg="rviz" type="rviz" name="rviz" args="-d $(find rgbdslam)/launch/rviz_config.vcg" respawn="false" output="log" > </node-->
+  <!--node pkg="rxtools" type="rxconsole" name="rxconsole" output="log" > </node-->
+</launch>
