@@ -9,6 +9,7 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/object_pose_estimation</url>
   <depend package="rospy"/>
+  <depend package="rosbag"/>
   <depend package="rgbdslam"/>
   <depend package="bag_tools"/>
   <depend package="image_transport"/>

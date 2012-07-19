@@ -17,11 +17,12 @@
 
   	<param name="config/wide_topic"                    value="$(arg stereo)/left/image_rect_color" />
   	<param name="config/wide_cloud_topic"              value="$(arg stereo)/points2" />
-  	<param name="config/use_icp"                       value="true" />
+  	<param name="config/use_icp"                       value="false" />
     <param name="config/base_frame_name"               value="$(arg image_frame_id)"/> <!-- /openni_camera for hand-held kinect. For robot, e.g., /base_link -->
     <param name="config/store_pointclouds"             value="true" />
     <param name="config/feature_detector_type"         value="SURF"/>
     <param name="config/descriptor_extractor_type"     value="SURF"/>
+    <param name="config/min_matches"                   value="20"/>
 
     <param name="config/start_paused"                  value="false"/>
  </node>

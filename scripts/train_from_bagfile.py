@@ -12,38 +12,38 @@ import signal
 import time
 import roslib
 import shutil
+import rosbag
 
-def cut_bag(inbags, start_time):
+def cut_bag(inbags, start_time, duration):
   cut_name = '/tmp/cut_bag.bag'
   cut_cmd = ['rosrun', 'bag_tools', 'cut.py', '--inbag']
   cut_cmd += inbags
-  cut_cmd += ['--outbag', cut_name, '--start', str(float(start_time) - 5), '--duration', '10']
+  cut_cmd += ['--outbag', cut_name, '--start', str(start_time - duration / 2.0), '--duration', str(duration)]
   print '=== cutting input bagfile(s):', ' '.join(cut_cmd)
   subprocess.check_call(cut_cmd)
   return cut_name
  
-def prepare_bag(inbags, start_time, object_id):
-  cut_bag_name = cut_bag(inbags, start_time)
-  namespace = 'object_pose_estimation'
-  stereo = '/camera_flex_wide'
-  left_image_topic  = stereo + '/left/image_raw'
-  left_info_topic   = stereo + '/left/camera_info'
-  right_image_topic = stereo + '/right/image_raw'
-  right_info_topic  = stereo + '/right/camera_info'
+def prepare_training_bag(inbags, start_time, duration, object_id, camera):
+  cut_bag_name = cut_bag(inbags, start_time, duration)
+  left_image_topic  = camera + '/left/image_raw'
+  left_info_topic   = camera + '/left/camera_info'
+  right_image_topic = camera + '/right/image_raw'
+  right_info_topic  = camera + '/right/camera_info'
   topics = [left_image_topic, left_info_topic, right_image_topic, right_info_topic]
   # slow playback to have more point clouds from stereo_image_proc
   bag_play_cmd = ['rosbag', 'play', '--clock', '-r', '0.4', '-d', '2.0', cut_bag_name]
   bag_play_cmd.append('--topics')
   bag_play_cmd += topics
+  namespace = '/object_pose_estimation'
   for t in topics:
-    remapping = t + ':=' + namespace + t
+    remapping = t + ':=' + namespace + t.replace(camera, '/stereo')
     bag_play_cmd.append(remapping)
   print '=== running PLAY process:', ' '.join(bag_play_cmd)
   play_process = subprocess.Popen(bag_play_cmd)
-  image_proc_process = subprocess.Popen(['rosrun', 'stereo_image_proc', 'stereo_image_proc', '__ns:='+namespace+stereo, '_disparity_range:=128'])
+  image_proc_process = subprocess.Popen(['rosrun', 'stereo_image_proc', 'stereo_image_proc', '__ns:='+namespace+'/stereo', '_disparity_range:=128'])
   object_bagfile = '/tmp/' + object_id + '_training.bag'
   bag_record_cmd = ['rosbag', 'record', '-b', '1024', '-O', object_bagfile]
-  prefix = namespace + stereo
+  prefix = namespace + '/stereo'
   rec_topics = [prefix + '/left/image_rect_color', prefix + '/left/camera_info', prefix + '/points2', prefix + '/right/image_rect_color', prefix + '/right/camera_info']
   bag_record_cmd += rec_topics
   print '=== running RECORD process:', ' '.join(bag_record_cmd)
@@ -58,12 +58,21 @@ def prepare_bag(inbags, start_time, object_id):
   return object_bagfile
 
 def reconstruct(bagfile):
+  print 'Looking for frame id...',
+  bag = rosbag.Bag(bagfile)
+  frame_id = ''
+  for topic, msg, t in bag.read_messages(topics=['/object_pose_estimation/stereo/left/camera_info']):
+    print msg
+    frame_id = msg.header.frame_id
+    break
+  if not frame_id:
+    raise
+  print 'found:', frame_id
   start_time = time.time()
-  frame_id = '/camera_flex_wide'
-  rgbdslam_cmd = ['roslaunch', 'object_pose_estimation', 'stereo_rgbdslam.launch', 'stereo:=/object_pose_estimation/camera_flex_wide', 'image_frame_id:=' + frame_id]
+  rgbdslam_cmd = ['roslaunch', 'object_pose_estimation', 'stereo_rgbdslam.launch', 'stereo:=/object_pose_estimation/stereo', 'image_frame_id:=' + frame_id]
   print '=== running rgbdslam launch process:', ' '.join(rgbdslam_cmd)
   rgbdslam_process = subprocess.Popen(rgbdslam_cmd)
-  bag_play_cmd = ['rosbag', 'play', '--clock', '-r', '0.5', '-d', '10.0', bagfile]
+  bag_play_cmd = ['rosbag', 'play', '--clock', '-r', '0.2', '-d', '5.0', bagfile]
   print '=== running PLAY process:', ' '.join(bag_play_cmd)
   play_process = subprocess.Popen(bag_play_cmd)
   play_process.wait()
@@ -95,22 +104,26 @@ def reconstruct(bagfile):
   rgbdslam_process.send_signal(signal.SIGINT)
   return pcd_filename, features_filename
 
-def create_object_model(inbags, start_time, object_id):
-  bag = prepare_bag(inbags, start_time, object_id)
+def create_object_model(inbags, start_time, duration, object_id, camera):
+  bag = prepare_training_bag(inbags, start_time, duration, object_id, camera)
   pcd_filename, features_filename = reconstruct(bag)
   model_dir = roslib.packages.get_pkg_dir(PKG) + '/models'
+  if not os.path.exists(model_dir):
+    os.makedirs(model_dir)
   shutil.copyfile(pcd_filename, model_dir + '/' + object_id + '_raw.pcd')
   shutil.copyfile(features_filename, model_dir + '/' + object_id + '_features_raw.yaml')
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train an object from a bagfile.')
   parser.add_argument('inbag', help='input bagfile', nargs='+')
-  parser.add_argument('-t', '--start_time', required=True, help='timestamp of the object that has to be modeled in seconds from the beginning of the bagfile')
+  parser.add_argument('-t', '--start_time', required=True, type=float, help='timestamp of the object that has to be modeled in seconds from the beginning of the bagfile')
+  parser.add_argument('-d', '--duration', type=float, default=10.0, help='time window of the object')
   parser.add_argument('-o', '--object_id', required=True, help='name for the object that is trained')
+  parser.add_argument('-c', '--camera', required=True, help='base topic of the camera to use')
   args = parser.parse_args()
  
   try:
-    create_object_model(args.inbag, args.start_time, args.object_id)
+    create_object_model(args.inbag, args.start_time, args.duration, args.object_id, args.camera)
   except Exception, e:
     import traceback
     traceback.print_exc()
