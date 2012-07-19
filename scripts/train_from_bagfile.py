@@ -25,7 +25,7 @@ def cut_bag(inbags, start_time):
 def prepare_bag(inbags, start_time, object_id):
   cut_bag_name = cut_bag(inbags, start_time)
   namespace = 'object_pose_estimation'
-  stereo = '/stereo_down'
+  stereo = '/camera_flex_wide'
   left_image_topic  = stereo + '/left/image_raw'
   left_info_topic   = stereo + '/left/camera_info'
   right_image_topic = stereo + '/right/image_raw'
@@ -59,8 +59,8 @@ def prepare_bag(inbags, start_time, object_id):
 
 def reconstruct(bagfile):
   start_time = time.time()
-  frame_id = '/stereo_down'
-  rgbdslam_cmd = ['roslaunch', 'object_pose_estimation', 'stereo_rgbdslam.launch', 'stereo:=/object_pose_estimation/stereo_down', 'image_frame_id:=' + frame_id]
+  frame_id = '/camera_flex_wide'
+  rgbdslam_cmd = ['roslaunch', 'object_pose_estimation', 'stereo_rgbdslam.launch', 'stereo:=/object_pose_estimation/camera_flex_wide', 'image_frame_id:=' + frame_id]
   print '=== running rgbdslam launch process:', ' '.join(rgbdslam_cmd)
   rgbdslam_process = subprocess.Popen(rgbdslam_cmd)
   bag_play_cmd = ['rosbag', 'play', '--clock', '-r', '0.5', '-d', '10.0', bagfile]
@@ -98,8 +98,9 @@ def reconstruct(bagfile):
 def create_object_model(inbags, start_time, object_id):
   bag = prepare_bag(inbags, start_time, object_id)
   pcd_filename, features_filename = reconstruct(bag)
-  shutil.copyfile(pcd_filename, '/tmp/' + object_id + '_raw.pcd')
-  shutil.copyfile(features_filename, '/tmp/' + object_id + '_features_raw.yaml')
+  model_dir = roslib.packages.get_pkg_dir(PKG) + '/models'
+  shutil.copyfile(pcd_filename, model_dir + '/' + object_id + '_raw.pcd')
+  shutil.copyfile(features_filename, model_dir + '/' + object_id + '_features_raw.yaml')
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Train an object from a bagfile.')

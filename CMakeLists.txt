@@ -11,6 +11,8 @@ include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
 
 rosbuild_init()
 
+find_package(OpenCV REQUIRED)
+
 #set the default path for built executables to the "bin" directory
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 #set the default path for built libraries to the "lib" directory
@@ -20,6 +22,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_genmsg()
 #uncomment if you have defined services
 #rosbuild_gensrv()
+
+rosbuild_add_executable(feature_matching_detector_node src/feature_matching_detector_node.cpp)
+target_link_libraries(feature_matching_detector_node ${OpenCV_LIBRARIES})
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)

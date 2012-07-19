@@ -16,7 +16,7 @@ doc/*.html
 doc/*.css
 
 # local files
-models/*/*
+models/
 
 # Makefiles
 # Makefile

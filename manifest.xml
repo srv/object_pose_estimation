@@ -10,6 +10,9 @@
   <url>http://ros.org/wiki/object_pose_estimation</url>
   <depend package="rospy"/>
   <depend package="rgbdslam"/>
+  <depend package="bag_tools"/>
+  <depend package="image_transport"/>
+  <depend package="vision_msgs"/>
 
 </package>
 
