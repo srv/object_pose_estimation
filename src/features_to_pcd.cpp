@@ -18,7 +18,7 @@ int main(int argc, char** argv)
 
   std::vector<cv::Point3f> points;
   cv::Mat features;
-  object_detection::features_io::loadFeatures(
+  object_pose_estimation::features_io::loadFeatures(
       features_filename, points, features);
   pcl::PointCloud<pcl::PointXYZ> cloud;
   for (size_t i = 0; i < points.size(); ++i)

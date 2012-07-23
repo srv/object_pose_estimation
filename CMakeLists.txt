@@ -24,6 +24,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_gensrv()
 
 rosbuild_add_executable(feature_matching_detector_node src/feature_matching_detector_node.cpp)
+rosbuild_add_executable(features_to_pcd src/features_to_pcd.cpp)
 target_link_libraries(feature_matching_detector_node ${OpenCV_LIBRARIES})
 
 #common commands for building c++ executables and libraries
