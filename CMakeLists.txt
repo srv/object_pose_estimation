@@ -17,6 +17,7 @@ catkin_package()
 include_directories(${OpenCV_INCLUDE_DIRS} ${catkin_INCLUDE_DIRS} include)
 
 add_executable(object_feature_matching_detector_node src/feature_matching_detector_node.cpp)
+add_dependencies(object_feature_matching_detector_node vision_msgs_gencpp)
 target_link_libraries(object_feature_matching_detector_node ${OpenCV_LIBS} ${pcl_LIBRARIES} ${catkin_LIBRARIES})
 
 add_executable(object_features_to_pcd src/features_to_pcd.cpp)
